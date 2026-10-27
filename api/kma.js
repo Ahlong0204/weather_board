@@ -1,6 +1,6 @@
 // api/kma.js – Vercel 서버 함수: /api/kma?region=대전
 // 지역의 오늘 날씨(기상청) + 우리 DB(wx_tasks) 일정 + 판단을 JSON 으로 돌려줌
-// 기상청 키는 Vercel 환경변수 KMA_data 로만 읽음 (코드 · 응답에 넣지 않음)
+// 기상청 키는 Vercel 환경변수 kma_data 로만 읽음 (코드 · 응답에 넣지 않음)
 const { judge, KMA_GRID, kmaBase, buildKmaUrl, parseKma } = require('../logic.js');
 
 // Supabase 연결정보 (공개용 값, config.js 와 같음 – 비밀 키 금지)
@@ -13,7 +13,7 @@ function send(res, status, body) {
 
 // 기상청 호출 → { w, why }. 실패하면 w 는 null, why 는 이유 코드 (키 · 호출 주소는 절대 싣지 않음)
 async function fetchWeather(region, now) {
-  const key = process.env.KMA_data;
+  const key = process.env.kma_data;
   if (!key) return { w: null, why: 'no-key' };
   try {
     const r = await fetch(buildKmaUrl(region, key, now), { signal: AbortSignal.timeout(8000) });

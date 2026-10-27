@@ -17,7 +17,7 @@
 | F-05 | 일정 목록을 data/tasks.json 으로 분리, 오늘 판단을 md 파일로 저장 | 04 데이터 형식 |
 | F-06 | 일정 목록을 Supabase 표(wx_tasks)에 저장해 여러 사람이 같이 봄 | 04 DB |
 | F-07 | 제목 아래에 오늘 날짜(YYYY-MM-DD) 표시 | 01 내 PC |
-| F-08 | 주소 /api/kma?region=지역 을 부르면 그 지역의 오늘 날씨(기상청) · DB 일정 · 일정별 판단을 JSON 으로 돌려줌 (Vercel 서버 함수 api/kma.js, 기상청 키는 환경변수 KMA_data) | 03 API |
+| F-08 | 주소 /api/kma?region=지역 을 부르면 그 지역의 오늘 날씨(기상청) · DB 일정 · 일정별 판단을 JSON 으로 돌려줌 (Vercel 서버 함수 api/kma.js, 기상청 키는 환경변수 kma_data) | 03 API |
 
 ## 4. 데이터 (가상)
 - 일정 칸 : 일정 이름(title) · 지역(region) · 구분(kind) · 담당(owner)
