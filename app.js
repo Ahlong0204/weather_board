@@ -107,15 +107,39 @@ async function addTask(e) {
   renderTasks();
 }
 
-// 오늘 날짜를 PC 시계 기준(로컬)으로 YYYY-MM-DD 로 표시
-function showToday() {
+// 오늘 날짜를 PC 시계 기준(로컬)으로 YYYY-MM-DD 문자열로 만듦
+function todayString() {
   const d = new Date();
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
-  document.getElementById('todayText').textContent = d.getFullYear() + '-' + mm + '-' + dd;
+  return d.getFullYear() + '-' + mm + '-' + dd;
+}
+
+function showToday() {
+  document.getElementById('todayText').textContent = todayString();
+}
+
+// 지금 표를 마크다운으로 바꿔 '현장일정_판단_YYYY-MM-DD.md' 로 내려받기
+function saveMarkdown() {
+  const date = todayString();
+  const rows = tasks.map((t) => {
+    const w = weatherByRegion[t.region];
+    return { title: t.title, region: t.region, kind: t.kind, owner: t.owner,
+             weather: weatherText(w), judge: judge(t.kind, w).text };
+  });
+  const blob = new Blob([buildMarkdown(date, rows)], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '현장일정_판단_' + date + '.md';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 document.getElementById('taskForm').addEventListener('submit', addTask);
+document.getElementById('saveMdBtn').addEventListener('click', saveMarkdown);
 showToday();
 connectDb();
 loadTasks().then(() => {

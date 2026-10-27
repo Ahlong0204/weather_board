@@ -42,4 +42,27 @@ function parseWeather(json) {
   return { tempMax, windMax, rainProb };
 }
 
-if (typeof module !== 'undefined') module.exports = { RULES, REGIONS, judge, buildWeatherUrl, parseWeather };
+// 표 칸 안의 | 와 줄바꿈이 표를 깨지 않게 바꿈
+function mdCell(v) {
+  return String(v).replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
+}
+
+// 오늘 판단을 마크다운 문자열로 만들기
+// rows: [{ title, region, kind, owner, weather, judge }]
+function buildMarkdown(date, rows) {
+  const lines = [
+    '# 현장 일정 판단 (' + date + ')',
+    '',
+    '| 일정 | 지역 | 구분 | 담당 | 날씨 | 판단 |',
+    '|---|---|---|---|---|---|',
+  ];
+  for (const r of rows) {
+    lines.push('| ' + [r.title, r.region, r.kind, r.owner, r.weather, r.judge].map(mdCell).join(' | ') + ' |');
+  }
+  lines.push('');
+  lines.push('판단 기준(교육용 가상): 고소 일정 풍속 ' + RULES.wind + 'm/s 이상 중지 검토 · 최고 기온 ' + RULES.heat
+    + '℃ 이상 폭염 휴식 · 강수확률 ' + RULES.rain + '% 이상 우천 주의 (실내는 영향 없음)');
+  return lines.join('\n') + '\n';
+}
+
+if (typeof module !== 'undefined') module.exports = { RULES, REGIONS, judge, buildWeatherUrl, parseWeather, buildMarkdown };
