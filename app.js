@@ -42,6 +42,33 @@ function renderTasks() {
   }
 }
 
+// 지역별 날씨를 받아 표를 다시 그림 (실패해도 목록은 이미 보임)
+async function loadWeather() {
+  const box = document.getElementById('weatherBox');
+  box.textContent = '날씨를 받는 중...';
+  const regions = Object.keys(REGIONS);
+  const results = await Promise.allSettled(regions.map(async (r) => {
+    const res = await fetch(buildWeatherUrl(r));
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return parseWeather(await res.json());
+  }));
+  const testWind = new URLSearchParams(location.search).get('test') === 'wind';
+  const parts = [];
+  let failed = 0;
+  results.forEach((res, i) => {
+    const w = res.status === 'fulfilled' ? res.value : null;
+    if (!w) { failed++; return; }
+    if (testWind) w.windMax = 12;
+    weatherByRegion[regions[i]] = w;
+    parts.push(regions[i] + ' ' + weatherText(w));
+  });
+  let msg = parts.length ? '오늘 날씨 – ' + parts.join(' / ') : '';
+  if (failed) msg += (msg ? ' ' : '') + '(날씨를 받지 못한 지역 ' + failed + '곳)';
+  if (testWind) msg += ' [시험: 풍속 12 m/s]';
+  box.textContent = msg || '날씨를 받지 못했습니다';
+  renderTasks();
+}
+
 function addTask(e) {
   e.preventDefault();
   const t = {
@@ -71,3 +98,4 @@ document.getElementById('taskForm').addEventListener('submit', addTask);
 showToday();
 loadTasks();
 renderTasks();
+loadWeather();
