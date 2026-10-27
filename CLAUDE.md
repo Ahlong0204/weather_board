@@ -11,7 +11,9 @@
 ## 폴더 구조
 - index.html : 화면 구조
 - style.css  : 디자인
-- data/tasks.json : 일정 목록 (가상 데이터)
+- config.js  : Supabase 연결정보 두 줄 (주소 · 공개용 키)
+- setup.sql  : Supabase 표(wx_tasks) 만들기 (내가 직접 실행)
+- data/tasks.json : 처음 일정 6건 원본 (지금은 읽지 않음)
 - logic.js   : 판단 규칙만 (화면을 다루는 코드 금지)
 - app.js     : 화면 동작 (목록 그리기, 일정 추가)
 - PRD.md · CLAUDE.md · README.md : 문서
@@ -27,6 +29,7 @@
 - 비밀 키는 코드 · 채팅 · GitHub 에 넣지 않는다.
 
 ## 일정 데이터 규칙
-- 일정 목록은 data/tasks.json 에서 먼저 읽는다. 코드(app.js)에 일정을 직접 적지 않는다.
-- 화면에서 추가한 일정만 브라우저 저장소(wx_added)에 따로 저장한다. JSON 파일은 화면에서 고치지 않는다.
-- 더블클릭(file://)으로 열어 JSON 을 읽지 못하면 '배포주소로 열어주세요'를 화면에 보여 준다.
+- 일정 목록은 Supabase 표 wx_tasks 에서 읽고, 화면에서 추가한 일정도 거기에 저장한다. 코드(app.js)에 일정을 직접 적지 않는다.
+- 구분 · 지역 규칙은 화면(선택 목록)과 DB(setup.sql 의 check)에서 모두 막는다. setup.sql 은 AI가 실행하지 않고 내가 직접 실행한다.
+- 연결정보는 config.js 두 줄(주소 · 공개용 키)만 둔다. 비밀 키(service_role)는 어디에도 넣지 않는다.
+- 외부 스크립트는 supabase-js 하나만 쓴다. (버전 고정)
