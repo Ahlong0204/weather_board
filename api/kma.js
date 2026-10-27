@@ -11,15 +11,25 @@ function send(res, status, body) {
   res.status(status).setHeader('Content-Type', 'application/json; charset=utf-8').send(JSON.stringify(body));
 }
 
+// 기상청 호출 → { w, why }. 실패하면 w 는 null, why 는 이유 코드 (키 · 호출 주소는 절대 싣지 않음)
 async function fetchWeather(region, now) {
   const key = process.env.KMA_data;
-  if (!key) return null;
+  if (!key) return { w: null, why: 'no-key' };
   try {
-    const r = await fetch(buildKmaUrl(region, key, now));
-    if (!r.ok) return null;
-    return parseKma(await r.json(), kmaBase(now).today);
+    const r = await fetch(buildKmaUrl(region, key, now), { signal: AbortSignal.timeout(8000) });
+    if (!r.ok) return { w: null, why: 'http-' + r.status };
+    const text = await r.text();
+    let json;
+    try { json = JSON.parse(text); } catch (e) {
+      return { w: null, why: 'not-json: ' + text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80) };
+    }
+    const w = parseKma(json, kmaBase(now).today);
+    if (w) return { w, why: '' };
+    const h = json && json.response && json.response.header;
+    if (h && h.resultCode !== '00') return { w: null, why: 'kma-' + h.resultCode + ': ' + String(h.resultMsg || '').slice(0, 60) };
+    return { w: null, why: 'empty' };
   } catch (e) {
-    return null;   // 오류 내용에 키가 든 주소가 섞일 수 있어 응답에 쓰지 않음
+    return { w: null, why: e && e.name === 'TimeoutError' ? 'timeout' : 'fetch-failed' };   // 오류 문구에 키가 든 주소가 섞일 수 있어 이름만 사용
   }
 }
 
@@ -42,7 +52,7 @@ module.exports = async function handler(req, res) {
   } catch (e) {
     return send(res, 502, { error: '일정 DB를 읽지 못했습니다.' });
   }
-  const w = await fetchWeather(region, now);
+  const { w, why } = await fetchWeather(region, now);
   const tasks = rows.map((t) => ({
     title: t.title, kind: t.kind, owner: t.owner,
     weather: w ? w.tempMax + '℃ · ' + w.windMax + 'm/s · ' + w.rainProb + '%' : '-',
@@ -54,6 +64,6 @@ module.exports = async function handler(req, res) {
     region,
     weather: w,
     tasks,
-    ...(w ? {} : { error: '날씨를 받지 못했습니다. 일정 목록만 표시합니다.' }),
+    ...(w ? {} : { error: '날씨를 받지 못했습니다. 일정 목록만 표시합니다. (' + why + ')' }),
   });
 };
