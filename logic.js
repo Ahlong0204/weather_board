@@ -42,6 +42,54 @@ function parseWeather(json) {
   return { tempMax, windMax, rainProb };
 }
 
+// 기상청 단기예보 격자 좌표 (nx, ny)
+const KMA_GRID = {
+  '세종': { nx: 66, ny: 103 },
+  '대전': { nx: 67, ny: 100 },
+  '태안': { nx: 48, ny: 109 },
+  '보령': { nx: 54, ny: 100 },
+};
+
+// 한국 시각 기준 오늘 날짜와 쓸 발표 시각 (오늘 최고 기온은 02시 발표, 02:10 전에는 전날 23시 발표)
+function kmaBase(nowMs) {
+  const k = new Date(nowMs + 9 * 3600 * 1000);   // UTC 메서드로 읽으면 한국 시각
+  const ymd = (d) => d.getUTCFullYear() + String(d.getUTCMonth() + 1).padStart(2, '0') + String(d.getUTCDate()).padStart(2, '0');
+  const today = ymd(k);
+  if (k.getUTCHours() * 60 + k.getUTCMinutes() >= 130) return { today, baseDate: today, baseTime: '0200' };
+  return { today, baseDate: ymd(new Date(k.getTime() - 24 * 3600 * 1000)), baseTime: '2300' };
+}
+
+// 기상청 단기예보 호출 주소 (serviceKey 는 호출하는 쪽에서 환경변수로 넘김)
+function buildKmaUrl(region, serviceKey, nowMs) {
+  const g = KMA_GRID[region];
+  if (!g) return null;
+  const b = kmaBase(nowMs);
+  return 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst'
+    + '?serviceKey=' + encodeURIComponent(serviceKey)
+    + '&pageNo=1&numOfRows=1000&dataType=JSON'
+    + '&base_date=' + b.baseDate + '&base_time=' + b.baseTime
+    + '&nx=' + g.nx + '&ny=' + g.ny;
+}
+
+// 기상청 응답 해석 → { tempMax, windMax, rainProb } (오늘 하루 최댓값), 이상하면 null
+function parseKma(json, today) {
+  const body = json && json.response && json.response.body;
+  const header = json && json.response && json.response.header;
+  if (!header || header.resultCode !== '00' || !body || !body.items || !Array.isArray(body.items.item)) return null;
+  const vals = { TMX: [], TMP: [], WSD: [], POP: [] };
+  for (const it of body.items.item) {
+    if (it.fcstDate !== today || !vals[it.category]) continue;
+    const n = Number(it.fcstValue);
+    if (isFinite(n)) vals[it.category].push(n);
+  }
+  const max = (a) => (a.length ? Math.max(...a) : null);
+  const tempMax = max(vals.TMX.length ? vals.TMX : vals.TMP);   // TMX 가 없으면 시간별 기온 최댓값
+  const windMax = max(vals.WSD);
+  const rainProb = max(vals.POP);
+  if (tempMax === null || windMax === null || rainProb === null) return null;
+  return { tempMax, windMax, rainProb };
+}
+
 // 표 칸 안의 | 와 줄바꿈이 표를 깨지 않게 바꿈
 function mdCell(v) {
   return String(v).replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
@@ -65,4 +113,4 @@ function buildMarkdown(date, rows) {
   return lines.join('\n') + '\n';
 }
 
-if (typeof module !== 'undefined') module.exports = { RULES, REGIONS, judge, buildWeatherUrl, parseWeather, buildMarkdown };
+if (typeof module !== 'undefined') module.exports = { RULES, REGIONS, judge, buildWeatherUrl, parseWeather, buildMarkdown, KMA_GRID, kmaBase, buildKmaUrl, parseKma };

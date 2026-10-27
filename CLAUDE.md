@@ -14,6 +14,7 @@
 - config.js  : Supabase 연결정보 두 줄 (주소 · 공개용 키)
 - setup.sql  : Supabase 표(wx_tasks) 만들기 (내가 직접 실행)
 - data/tasks.json : 처음 일정 6건 원본 (지금은 읽지 않음)
+- api/kma.js : Vercel 서버 함수 (/api/kma?region=지역 → 일정 · 날씨 · 판단 JSON)
 - logic.js   : 판단 규칙만 (화면을 다루는 코드 금지)
 - app.js     : 화면 동작 (목록 그리기, 일정 추가)
 - PRD.md · CLAUDE.md · README.md : 문서
@@ -33,3 +34,5 @@
 - 구분 · 지역 규칙은 화면(선택 목록)과 DB(setup.sql 의 check)에서 모두 막는다. setup.sql 은 AI가 실행하지 않고 내가 직접 실행한다.
 - 연결정보는 config.js 두 줄(주소 · 공개용 키)만 둔다. 비밀 키(service_role)는 어디에도 넣지 않는다.
 - 외부 스크립트는 supabase-js 하나만 쓴다. (버전 고정)
+- 기상청 인증키는 Vercel 환경변수 KMA_data 로만 읽는다(process.env.KMA_data). 코드 · 응답 · 오류 메시지 · GitHub 에 넣지 않는다. 기상청 호출 주소(키 포함)도 응답에 싣지 않는다.
+- api/kma.js 는 공개용 Supabase 값(주소 · 공개용 키)을 config.js 와 같게 직접 적는다. 이 값을 바꾸면 두 파일을 함께 고친다.
